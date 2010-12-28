@@ -1,0 +1,81 @@
+#!/bin/sh
+#
+# chkconfig: 345 50 83
+# description: Start Pentaho BI server
+#
+### BEGIN INIT INFO
+# Short-Description: Pentaho BI server start-up
+# Description: pentahi biserver start-up
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+DIR='/opt/biserver-ce'
+cd $DIR
+#cd -
+
+. "$DIR/set-pentaho-env.sh" >/dev/null 2>&1
+
+setPentahoEnv "$DIR/jre" >/dev/null 2>&1
+
+
+start()
+{
+	DIR='/opt/biserver-ce'
+	pgrep -f 'Dcatalina.home=/opt/biserver-ce/tomcat' >/dev/null 2>&1
+	if [ "$?" = 0 ]; then
+		action $"Pentaho BI Server is already running: " /bin/false
+		return 1
+	fi
+		
+        if [ -e "$DIR/promptuser.sh" ]; then
+              sh "$DIR/promptuser.sh"
+              rm "$DIR/promptuser.sh"
+        fi
+        if [ "$?" = 0 ]; then
+              cd "$DIR/tomcat/bin"
+              export CATALINA_OPTS="-Xms256m -Xmx768m -XX:MaxPermSize=256m -Dsun.rmi.dgc.client.gcInterval=3600000 -Dsun.rmi.dgc.server.gcInterval=3600000"
+              JAVA_HOME=$_PENTAHO_JAVA_HOME
+              sh startup.sh  >/dev/null 2>&1
+        fi
+ 	echo $?
+	action $"Starting Pentaho BI Server: " /bin/true
+	return 0
+}
+
+stop()
+{
+	DIR='/opt/biserver-ce'
+        cd "$DIR/tomcat/bin"
+        JAVA_HOME=$_PENTAHO_JAVA_HOME
+	pgrep -f 'Dcatalina.home=/opt/biserver-ce/tomcat' >/dev/null 2>&1
+	if [ "$?" = 1 ]; then
+		action $"Pentaho BI Server not running: " /bin/true
+		return 1
+	fi
+        sh shutdown.sh  >/dev/null 2>&1
+	echo -n "Stopping Pentaho BI Server: "
+	sleep 10 
+	pgrep -f 'Dcatalina.home=/opt/biserver-ce/tomcat' >/dev/null 2>&1
+	if [ "$?" = 0 ]; then
+		action $"" /bin/false
+		return 1
+	fi
+	action $"" /bin/true
+	return 0
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  *)
+	echo "Usage: $0 {start|stop}"
+	exit 3
+	;;
+esac
+
+exit $RETVAL
