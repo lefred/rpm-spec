@@ -1,0 +1,39 @@
+#!/bin/sh
+
+set -e
+
+start () {
+
+    /opt/Funambol/bin/funambol start
+    /opt/Funambol/bin/funambol-server start
+
+}
+
+stop () {
+
+    /opt/Funambol/bin/funambol-server stop
+    /opt/Funambol/bin/funambol stop
+
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        start
+        RETVAL=0
+        ;;
+  stop)
+        stop
+        RETVAL=0
+        ;;
+  restart|reload)
+        stop
+        start
+        RETVAL=0
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart}"
+        RETVAL=3
+esac
+
+exit $RETVAL
